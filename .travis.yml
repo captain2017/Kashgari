@@ -5,7 +5,10 @@ env:
   global:
     - COVERALLS_PARALLEL=true
   matrix:
-    - TEST_FILE=tests/
+    - TEST_FILE="tests/labeling/"
+    - TEST_FILE="tests/classification/"
+    - TEST_FILE="tests/embeddings/"
+    - TEST_FILE="tests/test_corpus.py tests/test_utils.py"
 
 cache: pip
 
