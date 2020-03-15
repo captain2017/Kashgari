@@ -8,15 +8,25 @@
 # time: 2:53 下午
 
 from abc import ABC
-from typing import Generator
+from typing import Generator, Dict
 
 
 class ABCProcessor(ABC):
-    def __init__(self, **kwargs):
-        self.vocab2idx = {}
-        self.idx2vocab = {}
+    def info(self) -> Dict:
+        return {
+            'config': {
+                'vocab2idx': self.vocab2idx,
+                'sequence_length': self.sequence_length
+            },
+            'class_name': self.__class__.__name__,
+            'module': self.__class__.__module__
+        }
 
-        self.sequence_length = None
+    def __init__(self, **kwargs):
+        self.vocab2idx = kwargs.get('vocab2idx', {})
+        self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
+
+        self.sequence_length = kwargs.get('sequence_length', None)
 
     @property
     def vocab_size(self) -> int:

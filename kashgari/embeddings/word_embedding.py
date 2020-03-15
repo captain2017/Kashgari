@@ -16,7 +16,7 @@ from typing import Dict, Any
 
 from kashgari.embeddings.abc_embedding import ABCEmbedding
 from kashgari.generators import CorpusGenerator
-from kashgari.processor.abc_processor import ABCProcessor
+from kashgari.processors.abc_processor import ABCProcessor
 
 L = keras.layers
 

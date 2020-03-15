@@ -10,10 +10,10 @@
 from abc import ABC
 from typing import List, Dict, Any
 from kashgari.embeddings import WordEmbedding
-from kashgari.typing import TextSamplesVar
+from kashgari.types import TextSamplesVar
 from kashgari.generators import CorpusGenerator
 from kashgari.tasks.abs_task_model import ABCTaskModel
-from kashgari.processor import SequenceProcessor
+from kashgari.processors import SequenceProcessor
 from kashgari.generators import BatchDataGenerator
 
 
@@ -25,7 +25,8 @@ class ABCLabelingModel(ABCTaskModel, ABC):
         super(ABCLabelingModel, self).__init__(embedding=embedding,
                                                hyper_parameters=hyper_parameters,
                                                **kwargs)
-        self.default_labeling_processor = SequenceProcessor(vocab_dict_type='labeling')
+        self.default_labeling_processor = SequenceProcessor(vocab_dict_type='labeling',
+                                                            min_count=1)
 
     def fit(self,
             x_train: TextSamplesVar,

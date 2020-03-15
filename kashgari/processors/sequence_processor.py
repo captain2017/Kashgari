@@ -7,26 +7,43 @@
 # file: text_processor.py
 # time: 12:27 下午
 
-import collections
 import logging
+import collections
 import operator
 
 import tqdm
 import numpy as np
+from typing import Dict, List
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
 from kashgari.generators import CorpusGenerator
-from kashgari.processor.abc_processor import ABCProcessor
-from kashgari.typing import TextSamplesVar, NumSamplesListVar
+from kashgari.processors.abc_processor import ABCProcessor
+from kashgari.types import TextSamplesVar
 
 
 class SequenceProcessor(ABCProcessor):
     """
-    Generic processor for the sequence samples.
+    Generic processors for the sequence samples.
     """
 
-    def __init__(self, vocab_dict_type: str = 'text', **kwargs):
+    def info(self) -> Dict:
+        data = super(SequenceProcessor, self).info()
+        data['config'].update({
+            'vocab2idx': self.vocab2idx,
+            'token_pad': self.token_pad,
+            'token_unk': self.token_unk,
+            'token_bos': self.token_bos,
+            'token_eos': self.token_eos,
+            'vocab_dict_type': self.vocab_dict_type,
+            'min_count': self.min_count
+        })
+        return data
+
+    def __init__(self,
+                 vocab_dict_type: str = 'text',
+                 min_count: int = 3,
+                 **kwargs):
         """
 
         Args:
@@ -39,10 +56,8 @@ class SequenceProcessor(ABCProcessor):
         self.token_bos: str = kwargs.get('token_bos', '<BOS>')
         self.token_eos: str = kwargs.get('token_eos', '<EOS>')
 
-        self.vocab2idx = {}
-        self.idx2vocab = {}
-
         self.vocab_dict_type = vocab_dict_type
+        self.min_count = min_count
 
         if vocab_dict_type == 'text':
             self._initial_vocab_dic = {
@@ -58,7 +73,7 @@ class SequenceProcessor(ABCProcessor):
         else:
             self._initial_vocab_dic = {}
 
-    def build_vocab_dict_if_needs(self, generator: CorpusGenerator, min_count: int = 3):
+    def build_vocab_dict_if_needs(self, generator: CorpusGenerator):
         if not self.vocab2idx:
             vocab2idx = self._initial_vocab_dic
 
@@ -81,7 +96,7 @@ class SequenceProcessor(ABCProcessor):
             token2count = collections.OrderedDict(sorted_token2count)
 
             for token, token_count in token2count.items():
-                if token not in vocab2idx and token_count >= min_count:
+                if token not in vocab2idx and token_count >= self.min_count:
                     vocab2idx[token] = len(vocab2idx)
             self.vocab2idx = vocab2idx
             self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
@@ -126,9 +141,22 @@ class SequenceProcessor(ABCProcessor):
         else:
             return np.array(sample_index)
 
+    def reverse_numerize(self,
+                         indexs: List[str],
+                         lengths: List[int] = None,
+                         **kwargs) -> List[List[str]]:
+        result = []
+        for index, seq in enumerate(indexs):
+            labels = []
+            for idx in seq:
+                labels.append(self.idx2vocab[idx])
+            if lengths is not None:
+                labels = labels[:lengths[index]]
+            result.append(labels)
+        return result
+
 
 if __name__ == "__main__":
-    import logging
     from kashgari.corpus import ChineseDailyNerCorpus
     from kashgari.generators import CorpusGenerator
 

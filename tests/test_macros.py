@@ -8,9 +8,12 @@
 # time: 3:23 下午
 
 import random
+import logging
 from kashgari.macros import DATA_PATH
 from tensorflow.keras.utils import get_file
 from kashgari.corpus import ChineseDailyNerCorpus, SMP2018ECDTCorpus
+
+logging.basicConfig(level='DEBUG')
 
 text_x = [
     ['语', '言', '学', '是', '一', '门', '关', '于', '人', '类', '语', '言', '的', '科', '学', '研', '究', '。'],
@@ -90,6 +93,7 @@ class TestMacros:
         if name is None:
             name = random.choice(list(data_dict.keys()))
         return data_dict[name]
+
 
 if __name__ == "__main__":
     pass

@@ -7,15 +7,16 @@
 # file: test_bi_lstm_model.py
 # time: 4:41 下午
 
-import logging
+import os
+import tempfile
+import time
 import unittest
 
 from kashgari.embeddings import WordEmbedding
+from kashgari.tasks.classification import BiLSTM_Model
 from kashgari.tasks.labeling import BiLSTM_Model
+from kashgari.utils import load_model
 from tests.test_macros import TestMacros
-
-
-logging.basicConfig(level='DEBUG')
 
 
 class TestBiLSTM_Model(unittest.TestCase):
@@ -37,6 +38,15 @@ class TestBiLSTM_Model(unittest.TestCase):
         model.fit(train_x,
                   train_y,
                   epochs=self.EPOCH_COUNT)
+
+        model_path = os.path.join(tempfile.gettempdir(), str(time.time()))
+        original_y = model.predict(train_x[:20])
+        model.save(model_path)
+        del model
+        new_model = load_model(model_path)
+        new_model.tf_model.summary()
+        new_y = new_model.predict(train_x[:20])
+        assert new_y == original_y
 
     def test_with_word_embedding(self):
         self.w2v_embedding.set_sequence_length(120)

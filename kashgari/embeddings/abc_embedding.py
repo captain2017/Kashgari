@@ -7,20 +7,55 @@
 # file: abc_embedding.py
 # time: 2:43 下午
 
+import json
+import pydoc
 import logging
 import numpy as np
-from typing import Dict, Any, List
+from typing import Dict, List
 from tensorflow import keras
 
-from kashgari.typing import TextSamplesVar, LabelSamplesVar
-from kashgari.processor.abc_processor import ABCProcessor
-from kashgari.processor import SequenceProcessor
+import kashgari
+from kashgari.types import TextSamplesVar, LabelSamplesVar
+from kashgari.processors.abc_processor import ABCProcessor
+from kashgari.processors import SequenceProcessor
 from kashgari.generators import CorpusGenerator
 
 L = keras.layers
 
 
 class ABCEmbedding:
+    def info(self) -> Dict:
+        return {
+            'class_name': self.__class__.__name__,
+            'module': self.__class__.__module__,
+            'text_processor': self.text_processor.info(),
+            'label_processor': self.label_processor.info(),
+            'config': self.kwargs,
+            'embed_model': json.loads(self.embed_model.to_json())
+        }
+
+    @classmethod
+    def load_saved_model_embedding(cls,
+                                   config_dict: Dict,
+                                   **kwargs):
+
+        target_name = 'text_processor'
+        module_name = f"{config_dict[target_name]['module']}.{config_dict[target_name]['class_name']}"
+        text_processor = pydoc.locate(module_name)(**config_dict[target_name]['config'])
+
+        target_name = 'label_processor'
+        module_name = f"{config_dict[target_name]['module']}.{config_dict[target_name]['class_name']}"
+        label_processor = pydoc.locate(module_name)(**config_dict[target_name]['config'])
+
+        instance = cls(text_processor=text_processor,
+                       label_processor=label_processor,
+                       **config_dict['config'])
+
+        embed_model_json_str = json.dumps(config_dict['embed_model'])
+        instance.embed_model = keras.models.model_from_json(embed_model_json_str,
+                                                            custom_objects=kashgari.custom_objects)
+        return instance
+
     def __init__(self,
                  sequence_length: int = None,
                  text_processor: ABCProcessor = None,
@@ -36,6 +71,8 @@ class ABCEmbedding:
 
         if sequence_length is not None:
             self.text_processor.sequence_length = sequence_length
+
+        self.kwargs = kwargs
 
     def set_sequence_length(self, length: int):
         self.text_processor.sequence_length = length

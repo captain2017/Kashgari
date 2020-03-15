@@ -10,10 +10,8 @@
 from typing import Dict, Any
 
 from tensorflow import keras
-
+from kashgari.layers import L
 from kashgari.tasks.classification.abc_model import ABCClassificationModel
-
-L = keras.layers
 
 
 class BiGRU_Model(ABCClassificationModel):

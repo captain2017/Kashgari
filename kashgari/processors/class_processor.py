@@ -16,14 +16,10 @@ from tensorflow.keras.utils import to_categorical
 from typing import List
 
 from kashgari.generators import CorpusGenerator
-from kashgari.processor.abc_processor import ABCProcessor
+from kashgari.processors.abc_processor import ABCProcessor
 
 
 class ClassificationProcessor(ABCProcessor):
-    def __init__(self, **kwargs):
-        super(ABCProcessor, self).__init__(**kwargs)
-        self.vocab2idx = {}
-        self.idx2vocab = {}
 
     def build_vocab_dict_if_needs(self, generator: CorpusGenerator, min_count: int = 3):
         generator.reset()
@@ -53,6 +49,12 @@ class ClassificationProcessor(ABCProcessor):
             return to_categorical(sample_index, self.vocab_size)
         else:
             return np.array(sample_index)
+
+    def reverse_numerize(self,
+                         indexs: List[str],
+                         lengths: List[int] = None,
+                         **kwargs) -> List[str]:
+        return [self.idx2vocab[i] for i in indexs]
 
 
 if __name__ == "__main__":

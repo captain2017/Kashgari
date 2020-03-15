@@ -11,9 +11,8 @@ from typing import Dict, Any
 
 from tensorflow import keras
 
+from kashgari.layers import L
 from kashgari.tasks.labeling.abc_model import ABCLabelingModel
-
-L = keras.layers
 
 
 class BiLSTM_Model(ABCLabelingModel):
@@ -57,6 +56,8 @@ class BiLSTM_Model(ABCLabelingModel):
 if __name__ == "__main__":
     from kashgari.corpus import ChineseDailyNerCorpus
 
-    x, y = ChineseDailyNerCorpus.load_data()
+    x, y = ChineseDailyNerCorpus.load_data('valid')
     model = BiLSTM_Model()
-    model.fit(x, y)
+    model.fit(x, y, epochs=1)
+    print(model.info())
+    model.save('./model')

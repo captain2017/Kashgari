@@ -7,13 +7,16 @@
 # file: abs_model.py
 # time: 4:05 下午
 
+import logging
 from abc import ABC
 from typing import List, Dict, Any
+
+import kashgari
 from kashgari.embeddings import WordEmbedding
-from kashgari.typing import TextSamplesVar
+from kashgari.types import TextSamplesVar
 from kashgari.generators import CorpusGenerator
 from kashgari.tasks.abs_task_model import ABCTaskModel
-from kashgari.processor.class_processor import ClassificationProcessor
+from kashgari.processors.class_processor import ClassificationProcessor
 from kashgari.generators import BatchDataGenerator
 
 

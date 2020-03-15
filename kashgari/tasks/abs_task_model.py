@@ -7,8 +7,15 @@
 # file: abs_task_model.py
 # time: 1:43 下午
 
+import os
+import json
+import pathlib
+import logging
+
 from abc import ABC
-from typing import List, Dict, Any
+from typing import Dict, Any
+
+import kashgari
 from kashgari.embeddings import WordEmbedding
 from kashgari.embeddings import BareEmbedding
 from kashgari.generators import CorpusGenerator
@@ -17,6 +24,23 @@ from tensorflow import keras
 
 
 class ABCTaskModel(ABC):
+
+    def info(self) -> Dict:
+        import kashgari
+        import tensorflow as tf
+        model_json_str = self.tf_model.to_json()
+
+        return {
+            'config': {
+                'hyper_parameters': self.hyper_parameters,
+            },
+            'tf_model': json.loads(model_json_str),
+            'embedding': self.embedding.info(),
+            'class_name': self.__class__.__name__,
+            'module': self.__class__.__module__,
+            'tf_version': tf.__version__,
+            'kashgari_version': kashgari.__version__
+        }
 
     def __init__(self,
                  embedding: WordEmbedding = None,
@@ -111,6 +135,57 @@ class ABCTaskModel(ABC):
             kwargs['metrics'] = ['accuracy']
 
         self.tf_model.compile(**kwargs)
+
+    def save(self, model_path: str):
+        """
+        Save model
+        Args:
+            model_path:
+        """
+        pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
+        model_path = os.path.abspath(model_path)
+
+        with open(os.path.join(model_path, 'model_info.json'), 'w') as f:
+            f.write(json.dumps(self.info(), indent=2, ensure_ascii=True))
+            f.close()
+
+        self.tf_model.save_weights(os.path.join(model_path, 'model_weights.h5'))
+        logging.info('model saved to {}'.format(os.path.abspath(model_path)))
+        return model_path
+
+    def predict(self,
+                x_data,
+                batch_size=32,
+                debug_info=False,
+                predict_kwargs: Dict = None,
+                **kwargs):
+        """
+        Generates output predictions for the input samples.
+
+        Computation is done in batches.
+
+        Args:
+            x_data: The input data, as a Numpy array (or list of Numpy arrays if the model has multiple inputs).
+            batch_size: Integer. If unspecified, it will default to 32.
+            debug_info: Bool, Should print out the logging info.
+            predict_kwargs: arguments passed to ``predict()`` function of ``tf.keras.Model``
+
+        Returns:
+            array(s) of predictions.
+        """
+        if predict_kwargs is None:
+            predict_kwargs = {}
+        with kashgari.utils.custom_object_scope():
+            tensor = self.embedding.text_processor.numerize_samples(x_data)
+            pred = self.tf_model.predict(tensor, batch_size=batch_size, **predict_kwargs)
+            pred = pred.argmax(-1)
+
+            res = self.embedding.label_processor.reverse_numerize(pred)
+            if debug_info:
+                logging.info('input: {}'.format(tensor))
+                logging.info('output: {}'.format(pred))
+                logging.info('output argmax: {}'.format(pred.argmax(-1)))
+        return res
 
 
 if __name__ == "__main__":

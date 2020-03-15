@@ -17,4 +17,12 @@ from kashgari.__version__ import __version__
 os.environ['TF_KERAS'] = '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from kashgari.corpus import SMP2018ECDTCorpus, ChineseDailyNerCorpus
+custom_objects = {}
+
+from kashgari import layers
+from kashgari import corpus
+from kashgari import embeddings
+from kashgari import macros
+from kashgari import processors
+from kashgari import tasks
+from kashgari import utils
