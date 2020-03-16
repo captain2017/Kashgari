@@ -9,7 +9,7 @@
 
 from abc import ABC
 from typing import List, Dict, Any
-from kashgari.embeddings import WordEmbedding
+from kashgari.embeddings.abc_embedding import ABCEmbedding
 from kashgari.types import TextSamplesVar
 from kashgari.generators import CorpusGenerator
 from kashgari.tasks.abs_task_model import ABCTaskModel
@@ -19,7 +19,7 @@ from kashgari.generators import BatchDataGenerator
 
 class ABCLabelingModel(ABCTaskModel, ABC):
     def __init__(self,
-                 embedding: WordEmbedding = None,
+                 embedding: ABCEmbedding = None,
                  hyper_parameters: Dict[str, Dict[str, Any]] = None,
                  **kwargs):
         super(ABCLabelingModel, self).__init__(embedding=embedding,
@@ -113,21 +113,31 @@ class ABCLabelingModel(ABCTaskModel, ABC):
         self.tf_model.summary()
 
         train_gen = BatchDataGenerator(train_sample_gen,
-                                       self.embedding.text_processor,
-                                       self.embedding.label_processor,
+                                       text_processor=self.embedding.text_processor,
+                                       label_processor=self.embedding.label_processor,
+                                       segment=self.embedding.segment,
+                                       seq_length=self.embedding.sequence_length,
                                        batch_size=batch_size)
 
         if fit_kwargs is None:
             fit_kwargs = {}
         if valid_sample_gen:
             valid_gen = BatchDataGenerator(valid_sample_gen,
-                                           self.embedding.text_processor,
-                                           self.embedding.label_processor,
+                                           text_processor=self.embedding.text_processor,
+                                           label_processor=self.embedding.label_processor,
+                                           segment=self.embedding.segment,
+                                           seq_length=self.embedding.sequence_length,
                                            batch_size=batch_size)
             fit_kwargs['validation_data'] = valid_gen
             fit_kwargs['validation_steps'] = valid_gen.steps
         if callbacks:
             fit_kwargs['callbacks'] = callbacks
+
+        (x0, x1), y = next(train_gen)
+        print('-'*20)
+        print(x0.shape)
+        print(x1.shape)
+        print(y.shape)
 
         return self.tf_model.fit(train_gen,
                                  steps_per_epoch=train_gen.steps,

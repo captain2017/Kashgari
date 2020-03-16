@@ -101,8 +101,7 @@ class ABCTaskModel(ABC):
             if self.default_labeling_processor is None:
                 raise ValueError('Need to set default_labeling_processor')
             self.embedding.label_processor = self.default_labeling_processor
-            self.label_processor.sequence_length = self.text_processor.sequence_length
-        self.embedding.build_generator(train_gen)
+        self.embedding.build_with_generator(train_gen)
         if self.tf_model is None:
             self.build_model_arc()
             self.compile_model()

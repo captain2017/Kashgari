@@ -69,13 +69,12 @@ class ABCEmbedding:
         self.label_processor = label_processor
         self.embed_model: keras.Model = None
 
-        if sequence_length is not None:
-            self.text_processor.sequence_length = sequence_length
-
+        self.sequence_length = sequence_length
+        self.segment = False  # 默认不需要添加 segment
         self.kwargs = kwargs
 
     def set_sequence_length(self, length: int):
-        self.text_processor.sequence_length = length
+        self.sequence_length = length
         if self.embed_model is not None:
             logging.info(f"Rebuild embedding model with sequence length: {length}")
             self.embed_model = None
@@ -83,15 +82,15 @@ class ABCEmbedding:
 
     def build(self, x_data: TextSamplesVar, y_data: LabelSamplesVar):
         gen = CorpusGenerator(x_data=x_data, y_data=y_data)
-        self.build_generator(gen)
+        self.build_with_generator(gen)
 
-    def build_generator(self, gen: CorpusGenerator = None):
+    def build_with_generator(self, gen: CorpusGenerator = None):
         self.build_text_vocab(gen=gen)
         self.build_embedding_model()
         if self.label_processor and gen is not None:
             self.label_processor.build_vocab_dict_if_needs(gen)
 
-    def build_text_vocab(self, gen: CorpusGenerator, force=False):
+    def build_text_vocab(self, gen: CorpusGenerator = None, force=False):
         raise NotImplementedError
 
     def build_embedding_model(self):
@@ -109,8 +108,10 @@ class ABCEmbedding:
         Returns:
             vectorized sentence list
         """
-        tensor_x = self.text_processor.numerize_samples(sentences)
-
+        self.build_with_generator()
+        tensor_x = self.text_processor.numerize_samples(sentences,
+                                                        segment=self.segment,
+                                                        seq_length=self.sequence_length)
         if debug:
             logging.debug(f'sentence tensor: {tensor_x}')
         embed_results = self.embed_model.predict(tensor_x)

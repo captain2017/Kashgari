@@ -16,7 +16,6 @@ class ABCProcessor(ABC):
         return {
             'config': {
                 'vocab2idx': self.vocab2idx,
-                'sequence_length': self.sequence_length
             },
             'class_name': self.__class__.__name__,
             'module': self.__class__.__module__
@@ -26,7 +25,7 @@ class ABCProcessor(ABC):
         self.vocab2idx = kwargs.get('vocab2idx', {})
         self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
 
-        self.sequence_length = kwargs.get('sequence_length', None)
+        self.corpus_sequence_length = kwargs.get('corpus_sequence_length', None)
 
     @property
     def vocab_size(self) -> int:

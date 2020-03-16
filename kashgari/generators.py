@@ -45,10 +45,19 @@ class CorpusGenerator:
 
 
 class BatchDataGenerator:
-    def __init__(self, corpus, text_processor, label_processor, batch_size=64):
+    def __init__(self,
+                 corpus,
+                 text_processor,
+                 label_processor,
+                 seq_length: int = None,
+                 segment: bool = False,
+                 batch_size=64):
         self.corpus = corpus
         self.text_processor = text_processor
         self.label_processor = label_processor
+
+        self.seq_length = seq_length
+        self.segment = segment
 
         self.batch_size = batch_size
 
@@ -71,7 +80,9 @@ class BatchDataGenerator:
             x_set.append(x)
             y_set.append(y)
 
-        return self.text_processor.numerize_samples(x_set), self.label_processor.numerize_samples(y_set, one_hot=True)
+        x_tensor = self.text_processor.numerize_samples(x_set, seq_length=self.seq_length, segment=self.segment)
+        y_tensor = self.label_processor.numerize_samples(y_set, seq_length=self.seq_length, one_hot=True)
+        return x_tensor, y_tensor
 
     def __call__(self, *args, **kwargs):
         return self

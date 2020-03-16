@@ -25,7 +25,6 @@ class TestBiLSTM_Model(unittest.TestCase):
     def setUpClass(cls):
         cls.EPOCH_COUNT = 1
         cls.TASK_MODEL_CLASS = BiLSTM_Model
-        cls.w2v_embedding = WordEmbedding(TestMacros.w2v_path)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -33,7 +32,7 @@ class TestBiLSTM_Model(unittest.TestCase):
 
     def test_basic_use(self):
         model = self.TASK_MODEL_CLASS()
-        train_x, train_y = TestMacros.load_labeling_corpus()
+        train_x, train_y = TestMacros.load_labeling_corpus('custom_1')
 
         model.fit(train_x,
                   train_y,
@@ -49,9 +48,10 @@ class TestBiLSTM_Model(unittest.TestCase):
         assert new_y == original_y
 
     def test_with_word_embedding(self):
-        self.w2v_embedding.set_sequence_length(120)
-        model = self.TASK_MODEL_CLASS(embedding=self.w2v_embedding)
-        train_x, train_y = TestMacros.load_labeling_corpus()
+        w2v_embedding = WordEmbedding(TestMacros.w2v_path, sequence_length=80)
+        w2v_embedding.set_sequence_length(120)
+        model = self.TASK_MODEL_CLASS(embedding=w2v_embedding)
+        train_x, train_y = TestMacros.load_labeling_corpus('custom_1')
         valid_x, valid_y = train_x, train_y
 
         model.fit(train_x,

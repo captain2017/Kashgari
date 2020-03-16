@@ -51,10 +51,10 @@ class SequenceProcessor(ABCProcessor):
             **kwargs:
         """
         super(SequenceProcessor, self).__init__(**kwargs)
-        self.token_pad: str = kwargs.get('token_pad', '<PAD>')
-        self.token_unk: str = kwargs.get('token_unk', '<UNK>')
-        self.token_bos: str = kwargs.get('token_bos', '<BOS>')
-        self.token_eos: str = kwargs.get('token_eos', '<EOS>')
+        self.token_pad: str = kwargs.get('token_pad', '[PAD]')
+        self.token_unk: str = kwargs.get('token_unk', '[UNK]')
+        self.token_bos: str = kwargs.get('token_bos', '[BOS]')
+        self.token_eos: str = kwargs.get('token_eos', '[EOS]')
 
         self.vocab_dict_type = vocab_dict_type
         self.min_count = min_count
@@ -101,31 +101,31 @@ class SequenceProcessor(ABCProcessor):
             self.vocab2idx = vocab2idx
             self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
 
-            if self.sequence_length is None:
-                self.sequence_length = sorted(seq_lens)[int(0.95 * len(seq_lens))]
-                logging.warning(f'Sequence length set to {self.sequence_length}')
+            if self.corpus_sequence_length is None:
+                self.corpus_sequence_length = sorted(seq_lens)[int(0.95 * len(seq_lens))]
 
             logging.info("------ Build vocab dict finished, Top 10 token ------")
             for token, index in list(self.vocab2idx.items())[:10]:
                 logging.info(f"Token: {token:8s} -> {index}")
             logging.info("------ Build vocab dict finished, Top 10 token ------")
         else:
-            if self.sequence_length is None:
-                logging.debug('Start calculating the sequence length')
+            if self.corpus_sequence_length is None:
                 seq_lens = []
                 generator.reset()
                 for sentence, _ in generator:
                     seq_lens.append(len(sentence))
-                self.sequence_length = sorted(seq_lens)[int(0.95 * len(seq_lens))]
-                logging.warning(f'Sequence length set to {self.sequence_length}')
+                self.corpus_sequence_length = sorted(seq_lens)[int(0.95 * len(seq_lens))]
 
-    def numerize_samples(self, samples: TextSamplesVar, one_hot: bool = False) -> np.ndarray:
-        if self.sequence_length is None:
-            sequence_length = max([len(i) for i in samples])
+    def numerize_samples(self,
+                         samples: TextSamplesVar,
+                         seq_length: int = None,
+                         segment: bool = False,
+                         one_hot: bool = False,
+                         **kwargs) -> np.ndarray:
+        if seq_length is None:
+            seq_length = max([len(i) for i in samples])
             logging.warning(
-                f'Sequence length is None, will use the max length of the samples, which is {sequence_length}')
-        else:
-            sequence_length = self.sequence_length
+                f'Sequence length is None, will use the max length of the samples, which is {seq_length}')
 
         numerized_samples = []
         for seq in samples:
@@ -135,11 +135,17 @@ class SequenceProcessor(ABCProcessor):
             else:
                 numerized_samples.append([self.vocab2idx[token] for token in seq])
 
-        sample_index = pad_sequences(numerized_samples, sequence_length, padding='post', truncating='post')
+        sample_index = pad_sequences(numerized_samples, seq_length, padding='post', truncating='post')
         if one_hot:
-            return to_categorical(sample_index, self.vocab_size)
+            token_ids = to_categorical(sample_index, self.vocab_size)
         else:
-            return np.array(sample_index)
+            token_ids = np.array(sample_index)
+
+        if segment:
+            segment_ids = np.zeros(token_ids.shape, dtype=np.int32)
+            return token_ids, segment_ids
+        else:
+            return token_ids
 
     def reverse_numerize(self,
                          indexs: List[str],

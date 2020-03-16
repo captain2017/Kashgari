@@ -21,7 +21,7 @@ from kashgari.processors.abc_processor import ABCProcessor
 
 class ClassificationProcessor(ABCProcessor):
 
-    def build_vocab_dict_if_needs(self, generator: CorpusGenerator, min_count: int = 3):
+    def build_vocab_dict_if_needs(self, generator: CorpusGenerator):
         generator.reset()
         if not self.vocab2idx:
             vocab2idx = {}
@@ -38,12 +38,16 @@ class ClassificationProcessor(ABCProcessor):
             token2count = collections.OrderedDict(sorted_token2count)
 
             for token, token_count in token2count.items():
-                if token not in vocab2idx and token_count >= min_count:
+                if token not in vocab2idx:
                     vocab2idx[token] = len(vocab2idx)
             self.vocab2idx = vocab2idx
             self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
 
-    def numerize_samples(self, samples: List[str], one_hot: bool = False) -> np.ndarray:
+    def numerize_samples(self,
+                         samples: List[str],
+                         seq_length: int = None,
+                         one_hot: bool = False,
+                         **kwargs) -> np.ndarray:
         sample_index = [self.vocab2idx[i] for i in samples]
         if one_hot:
             return to_categorical(sample_index, self.vocab_size)

@@ -115,19 +115,25 @@ class ABCClassificationModel(ABCTaskModel, ABC):
         self.tf_model.summary()
 
         train_gen = BatchDataGenerator(train_sample_gen,
-                                       self.embedding.text_processor,
-                                       self.embedding.label_processor,
-                                       batch_size=batch_size)
-        valid_gen = BatchDataGenerator(valid_sample_gen,
-                                       self.embedding.text_processor,
-                                       self.embedding.label_processor,
+                                       text_processor=self.embedding.text_processor,
+                                       label_processor=self.embedding.label_processor,
+                                       segment=self.embedding.segment,
+                                       seq_length=self.embedding.sequence_length,
                                        batch_size=batch_size)
 
         if fit_kwargs is None:
             fit_kwargs = {}
-        if valid_gen:
+
+        if valid_sample_gen:
+            valid_gen = BatchDataGenerator(valid_sample_gen,
+                                           text_processor=self.embedding.text_processor,
+                                           label_processor=self.embedding.label_processor,
+                                           segment=self.embedding.segment,
+                                           seq_length=self.embedding.sequence_length,
+                                           batch_size=batch_size)
             fit_kwargs['validation_data'] = valid_gen
             fit_kwargs['validation_steps'] = valid_gen.steps
+
         if callbacks:
             fit_kwargs['callbacks'] = callbacks
 

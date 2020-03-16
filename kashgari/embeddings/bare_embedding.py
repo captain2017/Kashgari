@@ -29,13 +29,13 @@ class BareEmbedding(ABCEmbedding):
                                             **kwargs)
         self.embedding_size = embedding_size
 
-    def build_text_vocab(self, gen: CorpusGenerator, force=False):
+    def build_text_vocab(self, gen: CorpusGenerator = None, force=False):
         if force or not self.text_processor.is_vocab_build:
             self.text_processor.build_vocab_dict_if_needs(generator=gen)
 
     def build_embedding_model(self):
         if self.embed_model is None:
-            input_tensor = L.Input(shape=(self.text_processor.sequence_length,),
+            input_tensor = L.Input(shape=(None,),
                                    name=f'input')
             layer_embedding = L.Embedding(self.text_processor.vocab_size,
                                           self.embedding_size,

@@ -13,11 +13,18 @@
 
 import os
 from kashgari.__version__ import __version__
+import logging
 
 os.environ['TF_KERAS'] = '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 custom_objects = {}
+logger = logging.Logger('kashgari', level='DEBUG')
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)-7s | %(message)s'))
+logger.addHandler(stream_handler)
+
+from kashgari.macros import config
 
 from kashgari import layers
 from kashgari import corpus

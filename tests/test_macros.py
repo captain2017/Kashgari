@@ -78,7 +78,8 @@ class TestMacros:
                         cache_dir=DATA_PATH)
 
     chinese_daily = ChineseDailyNerCorpus.load_data('valid')
-    # coll2003 = CONLL2003ENCorpus.load_data('valid')
+
+    smp_corpus = SMP2018ECDTCorpus.load_data('valid')
 
     # Test data for issue https://github.com/BrikerMan/Kashgari/issues/187
     custom_1 = (text_x, ner_y)
@@ -88,6 +89,16 @@ class TestMacros:
         data_dict = {
             'chinese_daily': cls.chinese_daily,
             'custom_1': cls.custom_1,
+        }
+
+        if name is None:
+            name = random.choice(list(data_dict.keys()))
+        return data_dict[name]
+
+    @classmethod
+    def load_classification_corpus(cls, name=None):
+        data_dict = {
+            'smp_corpus': cls.smp_corpus
         }
 
         if name is None:

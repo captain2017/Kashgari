@@ -9,6 +9,8 @@
 
 from .bare_embedding import BareEmbedding
 from .word_embedding import WordEmbedding
+from .bert_embedding import BertEmbedding
+from .transformer_embedding import TransformerEmbedding
 
 if __name__ == "__main__":
     pass
