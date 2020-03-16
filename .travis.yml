@@ -10,6 +10,9 @@ env:
     - TEST_FILE="tests/embeddings/"
     - TEST_FILE="tests/test_corpus.py tests/test_utils.py"
 
+python:
+  - "3.6"
+
 cache: pip
 
 before_install:
@@ -17,8 +20,20 @@ before_install:
 
 stages:
   - Lint
-  - name: Test
-    #if: (branch = master) OR (branch = kashgari2) OR (type IN (pull_request))
+  - Test
+
+install:
+  - pip install -r requirements.dev.txt
+  - python -c "import kashgari;print(f'kashgari version {kashgari.__version__}')"
+  - git fetch --unshallow --quiet
+  - export PYTHONPATH=`pwd`
+
+script: pytest --doctest-modules --junitxml=test-reports/junit.xml
+  --cov=kashgari --cov-report=xml:coverage.xml --cov-report=html:htmlcov
+  $TEST_FILE
+
+after_script:
+  - coveralls
 
 notifications:
   webhooks: https://coveralls.io/webhook
@@ -31,19 +46,3 @@ jobs:
         - pip install flake8 flake8-builtins
       script:
         - flake8 kashgari
-    - stage: test
-      python: "3.6"
-      install:
-        - pip install -r requirements.dev.txt
-        - python -c "import kashgari;print(f'kashgari version {kashgari.__version__}')"
-        - git fetch --unshallow --quiet
-        - export PYTHONPATH=`pwd`
-
-      script: pytest --doctest-modules --junitxml=test-reports/junit.xml
-        --cov=kashgari --cov-report=xml:coverage.xml --cov-report=html:htmlcov
-        $TEST_FILE
-
-      after_script:
-        - coveralls
-
-
