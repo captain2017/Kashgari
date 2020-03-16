@@ -16,24 +16,32 @@ from kashgari.tasks.classification import BiLSTM_Model as Classification_BiLSTM_
 
 from tests.test_macros import TestMacros
 
+bert_path = get_file('bert_sample_model',
+                     "http://s3.bmio.net/kashgari/bert_sample_model.tar.bz2",
+                     cache_dir=DATA_PATH,
+                     untar=True)
+
 
 class TestTransferEmbedding(unittest.TestCase):
 
     def test_bert_embedding(self):
-        bert_path = get_file('bert_sample_model',
-                             "http://s3.bmio.net/kashgari/bert_sample_model.tar.bz2",
-                             cache_dir=DATA_PATH,
-                             untar=True)
-        embedding = BertEmbedding(model_folder=bert_path, sequence_length=12)
-
-        # --- classification ----
+        sequence_length = 12
+        embedding = BertEmbedding(model_folder=bert_path,
+                                  sequence_length=sequence_length)
         x, y = TestMacros.load_classification_corpus()
-        embedding.embed(x)
+        res = embedding.embed(x[:10])
+        assert res.shape == (10, sequence_length, embedding.embedding_size)
 
+    def test_classification_task(self):
+        embedding = BertEmbedding(model_folder=bert_path, sequence_length=12)
         model = Classification_BiLSTM_Model(embedding=embedding)
+
+        x, y = TestMacros.load_classification_corpus()
         model.fit(x, y, epochs=1)
 
+    def test_label_task(self):
         # ------ labeling -------
+        embedding = BertEmbedding(model_folder=bert_path, sequence_length=12)
         x, y = TestMacros.load_labeling_corpus()
 
         model = BiLSTM_Model(embedding=embedding)

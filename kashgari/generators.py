@@ -7,44 +7,43 @@
 # file: generator.py
 # time: 4:53 下午
 
+from abc import ABC
 import random
 from typing import List
+from typing import Iterable
 
 
-class CorpusGenerator:
+class ABCGenerator(Iterable, ABC):
 
-    def __init__(self, x_data: List, y_data: List):
+    @property
+    def steps(self) -> int:
+        raise NotImplementedError
+
+    def __iter__(self):
+        raise NotImplementedError
+
+
+class CorpusGenerator(ABCGenerator):
+
+    def __init__(self, x_data: List, y_data: List, shuffle=True):
         self.x_data = x_data
         self.y_data = y_data
 
         self._index_list = list(range(len(self.x_data)))
-        self._current_index = 0
 
-        random.shuffle(self._index_list)
+        if shuffle:
+            random.shuffle(self._index_list)
 
-    def reset(self):
-        self._current_index = 0
+    def __iter__(self):
+        for i in self._index_list:
+            yield self.x_data[i], self.y_data[i]
 
     @property
     def steps(self) -> int:
         return len(self.x_data)
 
-    def __iter__(self):
-        return self
 
-    def __next__(self):
-        self._current_index += 1
-        if self._current_index >= len(self.x_data) - 1:
-            raise StopIteration()
-
-        sample_index = self._index_list[self._current_index]
-        return self.x_data[sample_index], self.y_data[sample_index]
-
-    def __call__(self, *args, **kwargs):
-        return self
-
-
-class BatchDataGenerator:
+class BatchDataGenerator(Iterable):
     def __init__(self,
                  corpus,
                  text_processor,
@@ -66,27 +65,24 @@ class BatchDataGenerator:
         return self.corpus.steps // self.batch_size
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        x_set = []
-        y_set = []
-        for i in range(self.batch_size):
-            try:
-                x, y = next(self.corpus)
-            except StopIteration:
-                self.corpus.reset()
-                x, y = next(self.corpus)
+        x_set, y_set = [], []
+        for x, y in self.corpus:
             x_set.append(x)
             y_set.append(y)
+            if len(x_set) == self.batch_size:
+                x_tensor = self.text_processor.numerize_samples(x_set, seq_length=self.seq_length, segment=self.segment)
+                y_tensor = self.label_processor.numerize_samples(y_set, seq_length=self.seq_length, one_hot=True)
+                yield x_tensor, y_tensor
+                x_set, y_set = [], []
+        # final step
+        if x_set:
+            x_tensor = self.text_processor.numerize_samples(x_set, seq_length=self.seq_length, segment=self.segment)
+            y_tensor = self.label_processor.numerize_samples(y_set, seq_length=self.seq_length, one_hot=True)
+            yield x_tensor, y_tensor
 
-        x_tensor = self.text_processor.numerize_samples(x_set, seq_length=self.seq_length, segment=self.segment)
-        y_tensor = self.label_processor.numerize_samples(y_set, seq_length=self.seq_length, one_hot=True)
-        return x_tensor, y_tensor
-
-    def __call__(self, *args, **kwargs):
+    def __next__(self):
         return self
 
-
-if __name__ == "__main__":
-    pass
+    def generator(self):
+        for item in self:
+            yield item

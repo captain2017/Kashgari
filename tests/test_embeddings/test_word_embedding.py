@@ -31,8 +31,9 @@ class TestWordEmbedding(unittest.TestCase):
         x, y = SMP2018ECDTCorpus.load_data()
         embedding = WordEmbedding(self.w2v_path)
         embedding.build(x, y)
-        res = embedding.embed(x[:2])
-        assert res.shape == (2, 15, 100)
+        res = embedding.embed(x[:10])
+        max_len = max([len(i) for i in x[:10]])
+        assert res.shape == (10, max_len, 100)
 
         embedding.set_sequence_length(30)
         res = embedding.embed(x[:2])

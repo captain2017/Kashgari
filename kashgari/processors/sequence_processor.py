@@ -14,6 +14,7 @@ import operator
 import tqdm
 import numpy as np
 from typing import Dict, List
+
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
@@ -73,19 +74,19 @@ class SequenceProcessor(ABCProcessor):
         else:
             self._initial_vocab_dic = {}
 
+        self._showed_seq_len_warning = False
+
     def build_vocab_dict_if_needs(self, generator: CorpusGenerator):
         if not self.vocab2idx:
             vocab2idx = self._initial_vocab_dic
 
             token2count = {}
-            seq_lens = []
-            generator.reset()
+
             for sentence, label in tqdm.tqdm(generator, total=generator.steps, desc="Preparing text vocab dict"):
                 if self.vocab_dict_type == 'text':
                     target = sentence
                 else:
                     target = label
-                seq_lens.append(len(target))
                 for token in target:
                     count = token2count.get(token, 0)
                     token2count[token] = count + 1
@@ -101,20 +102,10 @@ class SequenceProcessor(ABCProcessor):
             self.vocab2idx = vocab2idx
             self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
 
-            if self.corpus_sequence_length is None:
-                self.corpus_sequence_length = sorted(seq_lens)[int(0.95 * len(seq_lens))]
-
             logging.info("------ Build vocab dict finished, Top 10 token ------")
             for token, index in list(self.vocab2idx.items())[:10]:
                 logging.info(f"Token: {token:8s} -> {index}")
             logging.info("------ Build vocab dict finished, Top 10 token ------")
-        else:
-            if self.corpus_sequence_length is None:
-                seq_lens = []
-                generator.reset()
-                for sentence, _ in generator:
-                    seq_lens.append(len(sentence))
-                self.corpus_sequence_length = sorted(seq_lens)[int(0.95 * len(seq_lens))]
 
     def numerize_samples(self,
                          samples: TextSamplesVar,
@@ -124,8 +115,10 @@ class SequenceProcessor(ABCProcessor):
                          **kwargs) -> np.ndarray:
         if seq_length is None:
             seq_length = max([len(i) for i in samples])
-            logging.warning(
-                f'Sequence length is None, will use the max length of the samples, which is {seq_length}')
+            if not self._showed_seq_len_warning:
+                logging.warning(
+                    f'Sequence length is None, will use the max length of the samples, which is {seq_length}')
+                self._showed_seq_len_warning = True
 
         numerized_samples = []
         for seq in samples:
@@ -173,6 +166,3 @@ if __name__ == "__main__":
     p.build_vocab_dict_if_needs(gen)
     print(p.vocab2idx)
 
-    p2 = SequenceProcessor()
-    p2.build_vocab_dict_if_needs(gen)
-    print(p2.vocab2idx)

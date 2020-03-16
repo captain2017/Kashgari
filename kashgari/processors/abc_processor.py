@@ -25,8 +25,6 @@ class ABCProcessor(ABC):
         self.vocab2idx = kwargs.get('vocab2idx', {})
         self.idx2vocab = dict([(v, k) for k, v in self.vocab2idx.items()])
 
-        self.corpus_sequence_length = kwargs.get('corpus_sequence_length', None)
-
     @property
     def vocab_size(self) -> int:
         return len(self.vocab2idx)
@@ -35,7 +33,7 @@ class ABCProcessor(ABC):
     def is_vocab_build(self) -> bool:
         return self.vocab_size != 0
 
-    def build_vocab_dict_if_needs(self, generator: Generator, min_count: int = 3):
+    def build_vocab_dict_if_needs(self, generator: Generator):
         raise NotImplementedError
 
 

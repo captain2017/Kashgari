@@ -59,6 +59,7 @@ class TransformerEmbedding(ABCEmbedding):
         self.segment = True
 
         self.vocab_list = []
+        self.max_sequence_length = None
 
     def build_text_vocab(self, gen: CorpusGenerator = None, force=False):
         if not self.text_processor.is_vocab_build:
@@ -78,14 +79,13 @@ class TransformerEmbedding(ABCEmbedding):
 
     def build_embedding_model(self):
         if self.embed_model is None:
-            kwargs = {}
             config_path = self.config_path
 
             config = json.load(open(config_path))
-            if self.sequence_length:
-                if self.sequence_length > config.get('max_position_embeddings'):
-                    self.sequence_length = config.get('max_position_embeddings')
-                    logging.warning(f"Max seq length is {self.sequence_length}")
+            if 'max_position' in config:
+                self.max_sequence_length = config['max_position']
+            else:
+                self.max_sequence_length = config.get('max_position_embeddings')
 
             bert_model = build_transformer_model(config_path=self.config_path,
                                                  checkpoint_path=self.checkpoint_path,
@@ -94,6 +94,7 @@ class TransformerEmbedding(ABCEmbedding):
                                                  return_keras_model=True)
 
             self.embed_model = bert_model
+            self.embedding_size = bert_model.output.shape[-1]
 
 
 if __name__ == "__main__":

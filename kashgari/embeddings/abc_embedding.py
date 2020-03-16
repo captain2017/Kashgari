@@ -7,6 +7,7 @@
 # file: abc_embedding.py
 # time: 2:43 下午
 
+import tqdm
 import json
 import pydoc
 import logging
@@ -73,12 +74,23 @@ class ABCEmbedding:
         self.segment = False  # 默认不需要添加 segment
         self.kwargs = kwargs
 
+        self.embedding_size = None
+
     def set_sequence_length(self, length: int):
         self.sequence_length = length
         if self.embed_model is not None:
             logging.info(f"Rebuild embedding model with sequence length: {length}")
             self.embed_model = None
             self.build_embedding_model()
+
+    def calculate_sequence_length_if_needs(self, corpus_gen: CorpusGenerator, cover_rate: float = 0.95):
+        if self.sequence_length is None:
+            seq_lens = []
+            for sentence, _ in tqdm.tqdm(corpus_gen, total=corpus_gen.steps,
+                                         desc="Calculating sequence length"):
+                seq_lens.append(len(sentence))
+            self.sequence_length = sorted(seq_lens)[int(cover_rate * len(seq_lens))]
+            logging.warning(f'Calculated sequence length = {self.sequence_length}')
 
     def build(self, x_data: TextSamplesVar, y_data: LabelSamplesVar):
         gen = CorpusGenerator(x_data=x_data, y_data=y_data)

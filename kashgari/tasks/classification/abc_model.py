@@ -131,13 +131,13 @@ class ABCClassificationModel(ABCTaskModel, ABC):
                                            segment=self.embedding.segment,
                                            seq_length=self.embedding.sequence_length,
                                            batch_size=batch_size)
-            fit_kwargs['validation_data'] = valid_gen
+            fit_kwargs['validation_data'] = valid_gen.generator()
             fit_kwargs['validation_steps'] = valid_gen.steps
 
         if callbacks:
             fit_kwargs['callbacks'] = callbacks
 
-        return self.tf_model.fit(train_gen,
+        return self.tf_model.fit(train_gen.generator(),
                                  steps_per_epoch=train_gen.steps,
                                  epochs=epochs,
                                  callbacks=callbacks)

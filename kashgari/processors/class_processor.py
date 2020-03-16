@@ -22,7 +22,6 @@ from kashgari.processors.abc_processor import ABCProcessor
 class ClassificationProcessor(ABCProcessor):
 
     def build_vocab_dict_if_needs(self, generator: CorpusGenerator):
-        generator.reset()
         if not self.vocab2idx:
             vocab2idx = {}
 
